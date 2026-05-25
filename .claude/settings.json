@@ -1,0 +1,34 @@
+{
+  "remoteControlAtStartup": true,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/block-env-edits.py",
+            "onFailure": "block"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/auto-unit-tests.py",
+            "onFailure": "warn"
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/sync-plugin-skills.py",
+            "onFailure": "warn"
+          }
+        ]
+      }
+    ]
+  }
+}

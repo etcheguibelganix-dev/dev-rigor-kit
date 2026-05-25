@@ -12,10 +12,10 @@ Guide specifique Dobix. Remplace tous les placeholders {{...}} avec les valeurs 
 | `{{PROJECT_NAME_LOWER}}` | `dobix` |
 | `{{PROJECT_PATH}}` | `C:\Users\etche\Documents\GitHub\dobix` |
 | `{{MEMORY_PATH}}` | `C:\Users\etche\.claude\projects\C--Users-etche-Documents-GitHub-dobix\memory\` |
-| `{{SOURCE_DIRS}}` | `"api/", "core/", "services/"` (a ajuster selon structure reelle) |
-| `{{TEST_COMMAND}}` | `pytest -m unit -q --tb=line --no-header` (ou equivalent stack Dobix) |
-| `{{PROD_DB}}` | Nom de la DB prod Dobix |
-| `{{TEST_DB}}` | Nom de la DB test Dobix |
+| `{{SOURCE_DIRS}}` | `()` -- vide jusqu'a Phase 7 (pas de tests automatises avant) |
+| `{{TEST_COMMAND}}` | N/A jusqu'a Phase 7 -- validation manuelle par phase |
+| `{{PROD_DB}}` | N/A -- Dobix n'a pas de DB relationnelle (phases 1-6) |
+| `{{TEST_DB}}` | N/A -- idem |
 | `{{DATE}}` | Date du jour |
 
 ---
@@ -24,32 +24,43 @@ Guide specifique Dobix. Remplace tous les placeholders {{...}} avec les valeurs 
 
 ### 1. Depuis la racine du repo Dobix
 
-```powershell
-# PowerShell -- depuis la racine du repo Dobix
-$kit = "C:\Users\etche\Documents\GitHub\customsiq-mvp\docs\Technical\dev-rigor-kit"
+Cloner le kit depuis GitHub et copier les fichiers necessaires :
 
-# Copier les dossiers .claude et .github
-xcopy /E /I "$kit\.claude" ".claude"
-xcopy /E /I "$kit\.github" ".github"
-copy "$kit\CLAUDE.md.template" "CLAUDE.md"
-copy "$kit\.mcp.json.example" ".mcp.json.example"
-```
-
-Ou, si tu utilises directement le repo GitHub :
 ```bash
+# bash (Git Bash ou WSL)
 git clone https://github.com/etcheguibelganix-dev/dev-rigor-kit.git _kit
 cp -r _kit/.claude ./
-cp -r _kit/.github ./
 cp _kit/CLAUDE.md.template ./CLAUDE.md
 cp _kit/.mcp.json.example ./.mcp.json.example
 rm -rf _kit
 ```
+
+Ou en PowerShell :
+```powershell
+git clone https://github.com/etcheguibelganix-dev/dev-rigor-kit.git _kit
+xcopy /E /I "_kit\.claude" ".claude"
+copy "_kit\CLAUDE.md.template" "CLAUDE.md"
+copy "_kit\.mcp.json.example" ".mcp.json.example"
+Remove-Item -Recurse -Force _kit
+```
+
+> Note : ne pas pointer vers un autre projet local (ex: customsiq-mvp) -- toujours cloner depuis GitHub pour garantir la version a jour.
 
 ### 2. Adapter session-finalize/SKILL.md (bloc PROJECT_CONFIG)
 
 Ouvrir `.claude/skills/session-finalize/SKILL.md`.
 Remplacer UNIQUEMENT le bloc entre `<!-- PROJECT_CONFIG_BEGIN -->` et `<!-- PROJECT_CONFIG_END -->` :
 
+**Si le projet n'a pas de DB (comme Dobix phases 1-6) :**
+```markdown
+<!-- PROJECT_CONFIG_BEGIN -->
+**Projet :** `C:\Users\etche\Documents\GitHub\dobix`
+**Memoire :** `C:\Users\etche\.claude\projects\C--Users-etche-Documents-GitHub-dobix\memory\`
+**Tests :** aucun automatise (phases 1-6 manuels) -- Etape 3 : noter l'etat des phases seulement, pas de rapport de tests ni compteur
+<!-- PROJECT_CONFIG_END -->
+```
+
+**Si le projet a une DB (convention a activer quand Dobix aura une DB) :**
 ```markdown
 <!-- PROJECT_CONFIG_BEGIN -->
 **Projet :** `C:\Users\etche\Documents\GitHub\dobix`
@@ -64,10 +75,18 @@ Ne pas modifier le reste du fichier -- il sera mis a jour automatiquement par l'
 
 ### 3. Adapter auto-unit-tests.py
 
-Ouvrir `.claude/hooks/auto-unit-tests.py` et mettre a jour :
+Ouvrir `.claude/hooks/auto-unit-tests.py` et mettre a jour `SOURCE_DIRS`.
+
+**Si le projet n'a pas de tests automatises (comme Dobix phases 1-6) :**
+```python
+SOURCE_DIRS = ()  # Hook dormant -- activer quand les tests automatises existent
+```
+Le hook s'activera silencieusement sans rien lancer. Revenir ici et configurer les dossiers reels quand les tests arrivent (ex: Phase 7).
+
+**Si le projet a des tests automatises :**
 ```python
 SOURCE_DIRS = (
-    "api/",        # adapter aux dossiers source Dobix reels
+    "api/",        # adapter aux dossiers source reels
     "core/",
     # ...
 )
@@ -76,19 +95,20 @@ TEST_COMMAND = ["python", "-m", "pytest", "-m", "unit", "-q", "--tb=line", "--no
 
 ### 4. Adapter sync-plugin-skills.py
 
-Si Dobix a un sous-skill projet specifique (ex: `session-finalize-dobix`), ajouter a `SKILL_CACHE_MAP` :
+Si le projet a un sous-skill specifique (ex: `session-finalize-dobix`), ajouter a `SKILL_CACHE_MAP` :
 ```python
 SKILL_CACHE_MAP = {
-    "session-finalize": os.path.join(_CACHE_BASE, "session-finalize", ...),
-    "auto-compact": os.path.join(_CACHE_BASE, "auto-compact", ...),
-    "session-finalize-dobix": os.path.join(_CACHE_BASE, "session-finalize-dobix", ...),  # si applicable
+    "session-finalize": os.path.join(_CACHE_BASE, "session-finalize", "unknown", "skills", "session-finalize", "SKILL.md"),
+    "auto-compact": os.path.join(_CACHE_BASE, "auto-compact", "unknown", "skills", "auto-compact", "SKILL.md"),
+    "session-finalize-dobix": os.path.join(_CACHE_BASE, "session-finalize-dobix", "unknown", "skills", "session-finalize-dobix", "SKILL.md"),
 }
 ```
 
 ### 5. Remplir CLAUDE.md
 
 Adapter `CLAUDE.md` avec la stack reelle Dobix (Docker, ports, dependances, etc.).
-S'assurer que la section "Session finalize -- hook projet" est presente si Dobix a des docs specifiques :
+
+Si le projet a des docs specifiques a maintenir en session (comme Dobix), creer le sous-skill projet et declarer le hook dans CLAUDE.md :
 
 ```markdown
 ## Session finalize -- hook projet
@@ -96,9 +116,32 @@ S'assurer que la section "Session finalize -- hook projet" est presente si Dobix
 Skill projet : `session-finalize-dobix`
 ```
 
-Ou la supprimer si Dobix n'a pas de sous-skill specifique.
+Si aucun sous-skill projet n'est necessaire, omettre cette section.
 
-### 6. Ajouter au .gitignore
+### 6. Creer le sous-skill projet (si applicable)
+
+Pour Dobix, le sous-skill `session-finalize-dobix` couvre :
+- `docs/Product/dobix-capabilities.md` -- features delivrees par phase
+- `docs/Product/dobix-roadmap-decisions.md` -- decisions datees
+- `docs/Sessions/session-reports/session-YYYY-MM-DD.md` -- rapport session
+- `docs/Technical/dobix-technical-ref.html` -- conditonnel si infra modifiee
+
+Creer `.claude/skills/session-finalize-dobix/SKILL.md` base sur les docs reelles du projet.
+Puis ajouter une entree dans `sync-plugin-skills.py` (cf. etape 4) et syncer manuellement :
+
+```python
+python -c "
+import os, shutil
+HOME = os.path.expanduser('~')
+src = '.claude/skills/session-finalize-dobix/SKILL.md'
+dst = os.path.join(HOME, '.claude', 'plugins', 'cache', 'local', 'session-finalize-dobix', 'unknown', 'skills', 'session-finalize-dobix', 'SKILL.md')
+os.makedirs(os.path.dirname(dst), exist_ok=True)
+shutil.copy2(src, dst)
+print('Sync OK ->', dst)
+"
+```
+
+### 7. Ajouter au .gitignore
 
 ```
 .mcp.json
@@ -106,7 +149,7 @@ tests/.env.test
 lib/
 ```
 
-### 7. Creer la structure memoire
+### 8. Creer la structure memoire
 
 Dans le projet Claude Code Dobix, creer :
 ```
@@ -115,7 +158,7 @@ memory/
   MEMORY.md           # Index pointant vers project_dobix.md
 ```
 
-### 8. Configurer MCP GitHub
+### 9. Configurer MCP GitHub
 
 ```json
 {
@@ -133,26 +176,25 @@ memory/
 
 Ajouter `.mcp.json` au `.gitignore`.
 
-### 9. Synchroniser le skill session-finalize vers le cache
+### 10. Synchroniser les skills vers le cache
 
-```powershell
-# PowerShell
-$src = ".claude\skills\session-finalize\SKILL.md"
-$dst = "$env:APPDATA\..\Local\.claude\plugins\cache\local\session-finalize\unknown\skills\session-finalize\SKILL.md"
-New-Item -ItemType Directory -Force -Path (Split-Path $dst)
-Copy-Item $src $dst
-Write-Host "Sync OK"
+```python
+python -c "
+import os, shutil
+HOME = os.path.expanduser('~')
+skills = ['session-finalize', 'auto-compact']
+for s in skills:
+    src = f'.claude/skills/{s}/SKILL.md'
+    dst = os.path.join(HOME, '.claude', 'plugins', 'cache', 'local', s, 'unknown', 'skills', s, 'SKILL.md')
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    shutil.copy2(src, dst)
+    print(f'Sync OK : {s}')
+"
 ```
 
-Idem pour auto-compact :
-```powershell
-$src = ".claude\skills\auto-compact\SKILL.md"
-$dst = "$env:APPDATA\..\Local\.claude\plugins\cache\local\auto-compact\unknown\skills\auto-compact\SKILL.md"
-New-Item -ItemType Directory -Force -Path (Split-Path $dst)
-Copy-Item $src $dst
-```
+Faire de meme pour le sous-skill projet si applicable (cf. etape 6).
 
-### 10. Creer les branches develop et main sur GitHub
+### 11. Creer les branches develop et main sur GitHub
 
 ```bash
 git checkout -b develop
@@ -160,11 +202,11 @@ git push origin develop
 # main est la branche par defaut sur GitHub
 ```
 
-### 11. Verifier les hooks dans Claude Code
+### 12. Verifier les hooks dans Claude Code
 
 Au prochain demarrage Claude Code sur Dobix, verifier que :
 - L'edition d'un fichier `.env` est bloquee
-- L'edition d'un fichier source `.py` declenche les tests
+- L'edition d'un fichier source `.py` declenche les tests (ou que le hook est silencieux si SOURCE_DIRS vide)
 - `session-finalize` pousse sur `develop` (pas `main`)
 - Etape 0 de `session-finalize` se connecte au repo `dev-rigor-kit` et rapporte "Kit v1.0.0 -- a jour"
 
@@ -178,25 +220,28 @@ Une fois installe, a chaque `session-finalize` :
 |---------|-------------|
 | `.claude/hooks/block-env-edits.py` | Mis a jour depuis le kit si change |
 | `.claude/skills/auto-compact/SKILL.md` | Mis a jour depuis le kit si change |
-| `.claude/skills/session-finalize/SKILL.md` | Logique mise a jour, config Dobix preservee |
+| `.claude/skills/session-finalize/SKILL.md` | Logique mise a jour, config projet preservee |
 
 | Fichier | Comportement |
 |---------|-------------|
-| `.claude/hooks/auto-unit-tests.py` | **Non sync** -- specifique Dobix (SOURCE_DIRS) |
-| `.claude/hooks/sync-plugin-skills.py` | **Non sync** -- specifique Dobix (SKILL_CACHE_MAP) |
-| `.claude/skills/session-finalize-dobix/SKILL.md` | **Non sync** -- sous-skill projet Dobix |
+| `.claude/hooks/auto-unit-tests.py` | **Non sync** -- specifique projet (SOURCE_DIRS) |
+| `.claude/hooks/sync-plugin-skills.py` | **Non sync** -- specifique projet (SKILL_CACHE_MAP) |
+| `.claude/skills/session-finalize-dobix/SKILL.md` | **Non sync** -- sous-skill projet |
 
 ---
 
 ## Points d'attention specifiques Dobix
 
-D'apres la memoire CustomsIQ sur Dobix :
-- Stack : Docker, Tailscale, scripts, roadmap phases 1-6
-- Repo GitHub prive
-- Migration serveur en cours
+Etat actuel Dobix (2026-05-25) :
+- Phases 1-5 terminees (Stack, Gmail, Repo app client, Agent fichiers PC fixe, Agent fichiers laptop)
+- Phase 5 laptop : cloner repo + executer install.bat sur le laptop
+- Sous-skill `session-finalize-dobix` installe et configure
+- Pas de tests automatises avant Phase 7 (validation manuelle par phase)
+- Pas de DB relationnelle dans la stack Dobix (phases 1-6) -- convention DB a activer si DB ajoutee
 
 Verifier avant installation :
 - [ ] Python disponible dans le PATH (`python --version`)
-- [ ] pytest installe dans le venv Dobix
-- [ ] Docker Desktop en route pour les tests d'integration
-- [ ] Structure de dossiers source a confirmer pour `auto-unit-tests.py`
+- [ ] Git configure (`git config user.name`)
+- [ ] Docker Desktop accessible (pour lancer la stack)
+- [ ] Tailscale connecte (pour les tests d'acces distant)
+- [ ] SOURCE_DIRS laisse vide jusqu'a Phase 7 (pas de tests automatises)

@@ -197,36 +197,43 @@ Modifier sans supprimer l'historique :
 
 Si `HANDOFF.md` existe a la racine :
 
-### Detection de l'appareil courant
+### Detection appareil courant et autre appareil
 
 ```python
 import os, socket
 device = open('.device').read().strip() if os.path.exists('.device') else socket.gethostname()
 ```
 
-### Mise a jour table Sync
+Determiner "autre appareil" : si `device == "pc_fixe"` -> autre = `"laptop"`, sinon -> autre = `"pc_fixe"`.
+Adapter si plus de deux appareils : utiliser les entetes de section `## Pour [nom]` presentes dans HANDOFF.md.
 
-Remplacer la ligne de l'appareil courant dans le tableau "Sync des appareils" :
-```
-| [device] | YYYY-MM-DD HH:MM | [branche] |
-```
-Laisser les autres lignes intactes.
+### Ecriture entree riche dans "## Pour [autre appareil]"
 
-### Ajout entree session (en tete de ## Sessions recentes, avant les entrees existantes)
+Ajouter en tete de la section `## Pour [autre appareil]` (avant les entrees existantes) :
 
 ```markdown
-### YYYY-MM-DD -- [resume bref session]
+### YYYY-MM-DD -- [resume bref session en une ligne]
 
-**Appareil :** [device]
+**Deploye :**
+[liste fichiers cles crees/modifies + ce qu'ils font -- depuis git diff Etape 1]
 
-**Livré :**
-[liste fichiers cles + ce qu'ils font, depuis git diff Etape 1]
+**Decisions actives (affectent ton travail) :**
+[decisions techniques qui changent le comportement -- ou _(aucune)_]
 
-**Commits :** `SHA1` · `SHA2`
+**A faire ici :**
+- [ ] [action manuelle requise sur l'autre appareil -- ou _(aucune action requise)_]
 
-**En attente sur [autre appareil] :**
-[actions manuelles explicites si connues -- sinon : _(aucune action requise)_]
+**Prochaine etape :**
+[prochaine phase ou tache a implementer]
 ```
+
+### Mise a jour table Sync
+
+Remplacer la ligne de l'appareil courant dans la table `## Sync` :
+```
+| [device] | YYYY-MM-DD HH:MM |
+```
+Laisser les autres lignes intactes.
 
 HANDOFF.md sera inclus dans le commit Etape 6.
 

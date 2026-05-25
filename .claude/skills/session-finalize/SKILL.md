@@ -8,7 +8,7 @@ description: >
   NE PAS declencher pour des demandes ponctuelles de commit seul, push seul, ou mise a jour d'un seul fichier.
 
   Ce skill automatise la sequence complete : sync kit -> snapshot git -> mise a jour memoire -> rapport de run
-  -> hook projet (docs specifiques) -> CLAUDE.md -> commit docs -> push origin/develop.
+  -> hook projet (docs specifiques) -> CLAUDE.md -> HANDOFF.md -> commit docs -> push origin/develop.
   Generique -- specificites projet deleguees au skill declare dans CLAUDE.md (section "Session finalize -- hook projet").
 ---
 
@@ -64,10 +64,11 @@ Pour chaque fichier du Groupe A :
 | Fichier dans le kit | Fichier local |
 |---|---|
 | `.claude/skills/session-finalize/SKILL.md` | `.claude/skills/session-finalize/SKILL.md` (ce fichier) |
+| `.claude/skills/session-start/SKILL.md` | `.claude/skills/session-start/SKILL.md` |
 
-Pour le Groupe B :
+Pour chaque fichier du Groupe B :
 1. Lire le fichier local. Extraire le bloc entre `<!-- PROJECT_CONFIG_BEGIN -->` et `<!-- PROJECT_CONFIG_END -->` (les deux lignes de commentaire incluses). Appeler ce bloc `LOCAL_CONFIG`.
-2. Telecharger le fichier kit : `mcp__github__get_file_contents(owner="etcheguibelganix-dev", repo="dev-rigor-kit", path=".claude/skills/session-finalize/SKILL.md")`
+2. Telecharger le fichier kit : `mcp__github__get_file_contents(owner="etcheguibelganix-dev", repo="dev-rigor-kit", path="<chemin>")`
 3. Dans le contenu kit, remplacer le bloc `<!-- PROJECT_CONFIG_BEGIN -->...<!-- PROJECT_CONFIG_END -->` par `LOCAL_CONFIG`.
 4. Si le resultat differe de la version locale actuelle : ecrire (Write). Copier aussi vers le cache.
 5. Si identique : continuer silencieusement.
@@ -192,6 +193,47 @@ Modifier sans supprimer l'historique :
 
 ---
 
+## Etape 5.5 -- HANDOFF.md (si present)
+
+Si `HANDOFF.md` existe a la racine :
+
+### Detection de l'appareil courant
+
+```python
+import os, socket
+device = open('.device').read().strip() if os.path.exists('.device') else socket.gethostname()
+```
+
+### Mise a jour table Sync
+
+Remplacer la ligne de l'appareil courant dans le tableau "Sync des appareils" :
+```
+| [device] | YYYY-MM-DD HH:MM | [branche] |
+```
+Laisser les autres lignes intactes.
+
+### Ajout entree session (en tete de ## Sessions recentes, avant les entrees existantes)
+
+```markdown
+### YYYY-MM-DD -- [resume bref session]
+
+**Appareil :** [device]
+
+**Livré :**
+[liste fichiers cles + ce qu'ils font, depuis git diff Etape 1]
+
+**Commits :** `SHA1` · `SHA2`
+
+**En attente sur [autre appareil] :**
+[actions manuelles explicites si connues -- sinon : _(aucune action requise)_]
+```
+
+HANDOFF.md sera inclus dans le commit Etape 6.
+
+Si HANDOFF.md absent : passer silencieusement (convention optionnelle, pas obligatoire).
+
+---
+
 ## Etape 6 -- Commit docs
 
 Verifier qu'aucun fichier sensible n'est inclus :
@@ -204,8 +246,11 @@ Si un `.env*` apparait : ne pas committer, alerter l'utilisateur.
 ```bash
 git add CLAUDE.md \
         "docs/Tests/test-reports/run-YYYY-MM-DD.md" \
+        HANDOFF.md \
         [tous les fichiers docs modifies par le hook projet -- d'apres git status]
 ```
+
+Note : `HANDOFF.md` n'est inclus que s'il existe et a ete modifie (verifier avec `git status`).
 
 Message de commit :
 ```
@@ -213,6 +258,7 @@ docs: Phase N - [resume en une ligne]
 
 - CLAUDE.md : Phase N ajoutee, tests TOTAL/TOTAL
 - docs/Tests/test-reports/run-YYYY-MM-DD.md : rapport Phase N
+- HANDOFF.md : session enregistree, sync [device] mise a jour
 [- lignes pour chaque fichier modifie par le hook projet]
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
@@ -266,6 +312,7 @@ Docs mis a jour :
   - memory/project_{{PROJECT_NAME_LOWER}}.md + MEMORY.md
   - docs/Tests/test-reports/run-YYYY-MM-DD.md     (cree)
   - CLAUDE.md                                      (Phase N + tests TOTAL/TOTAL)
+  - HANDOFF.md                                     (session enregistree)
   [docs specifiques mis a jour par le hook projet]
 
 Total tests : TOTAL/TOTAL PASS | Phase N | YYYY-MM-DD

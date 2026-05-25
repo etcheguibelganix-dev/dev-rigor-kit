@@ -1,0 +1,110 @@
+# {{PROJECT_NAME}} -- Contexte projet pour Claude Code
+
+> Derniere mise a jour : {{DATE}} -- Phase 1 initialisee.
+
+## Contexte du projet
+
+{{DESCRIPTION_COURTE_DU_PROJET}}
+
+---
+
+## Stack technique
+
+- **{{LANGUAGE}} {{VERSION}}**
+- **{{FRAMEWORK}}** (API / backend)
+- **{{DATABASE}}** (port **{{DB_PORT}}**)
+- **{{TEST_FRAMEWORK}}**
+- **{{AUTRES_OUTILS}}**
+
+---
+
+## Structure du projet
+
+```
+{{PROJECT_NAME_LOWER}}/
+  {{LISTE_DOSSIERS_PRINCIPAUX}}
+  .claude/
+    hooks/           # Hooks PreToolUse / PostToolUse
+    skills/          # Skills session-finalize + auto-compact
+  tests/
+  docs/
+    Tests/           # test-plan.html + test-reports/
+    Technical/       # technical-ref.html
+  CLAUDE.md          # Ce fichier
+```
+
+---
+
+## Convention de branching
+
+- **`develop`** : branche d'integration -- tout le travail en cours. Toutes les sessions poussent sur `develop`.
+- **`main`** : branche stable/production -- merges depuis `develop` uniquement, via PR GitHub.
+- **Workflow obligatoire** : `feature/phase-X` (ou direct sur `develop`) -> PR `develop` -> `main` pour release.
+- **`session-finalize`** : pousse toujours sur `develop`, jamais sur `main` directement.
+- **PR `develop` -> `main`** : a creer manuellement apres validation d'une phase ou d'un groupe de phases.
+
+---
+
+## Variables d'environnement
+
+### Production (`.env`)
+```
+{{LISTE_VARS_PROD}}
+```
+
+### Tests (`tests/.env.test`) -- jamais committe
+```
+{{LISTE_VARS_TEST}}
+```
+
+---
+
+## Suite de tests -- etat initial
+
+```
+pytest -m unit          -> 0 tests
+pytest -m integration   -> 0 tests
+pytest -m regression    -> 0 tests
+```
+
+---
+
+## Regles imperatives pour Claude Code
+
+- **Ne jamais toucher `{{PROD_DB}}` (prod)** pendant les tests -- uniquement `{{TEST_DB}}`.
+- **Ne jamais committer `tests/.env.test`**.
+- {{AUTRES_REGLES_IMPERATIVES}}
+
+---
+
+## Session finalize -- hook projet
+
+Skill projet : `session-finalize-{{PROJECT_NAME_LOWER}}`
+
+> Supprimer cette section si le projet n'a pas de docs specifiques a mettre a jour
+> (le core session-finalize fonctionne sans sous-skill).
+
+---
+
+## Etat des phases
+
+| Phase | Contenu | Statut |
+|-------|---------|--------|
+| Phase 1 | {{DESCRIPTION_PHASE_1}} | En cours |
+
+---
+
+## Triggers outils de developpement
+
+### `/session-finalize` -- Declencher sur :
+- "Finalise la session" / "cloture la session" / "termine la session"
+- "mets a jour les docs et pousse" / "commits et push la session"
+
+### `/auto-compact` -- Declencher sur :
+- "/auto-compact" / "demarre le moniteur de contexte"
+
+---
+
+## Bugs connus
+
+_(aucun pour l'instant)_

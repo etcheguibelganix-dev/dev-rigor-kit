@@ -72,28 +72,34 @@ Memoire :
 
 ### Si `HANDOFF.md` existe a la racine
 
-#### 3a -- Lire
-
-Extraire :
-- Table "Sync des appareils" : quelle est la date de derniere sync de l'autre appareil?
-- "Sessions recentes" : y a-t-il des actions en attente sur l'appareil courant?
-
-#### 3b -- Detecter l'appareil courant
+#### 3a -- Detecter l'appareil courant
 
 ```python
 import os, socket
 device = open('.device').read().strip() if os.path.exists('.device') else socket.gethostname()
 ```
 
-#### 3c -- Mettre a jour la table Sync
+#### 3b -- Lire la section "Pour [device]"
 
-Remplacer la ligne de l'appareil courant :
+Lire `HANDOFF.md`. Extraire le contenu de la section `## Pour [device]`.
+
+Si des entrees sont presentes : **afficher comme briefing de session** (contexte transmis par l'autre appareil).
+Si la section est vide ou ne contient qu'une ligne d'italique : continuer silencieusement.
+
+#### 3c -- Vider la section "Pour [device]"
+
+Remplacer le corps de `## Pour [device]` par `_(aucun message en attente)_`.
+Laisser l'entete de section (`## Pour [device]`) et les autres sections intactes.
+
+#### 3d -- Mettre a jour la table Sync
+
+Remplacer la ligne de l'appareil courant dans la table `## Sync` :
 ```
-| [device] | YYYY-MM-DD HH:MM | [branche] |
+| [device] | YYYY-MM-DD HH:MM |
 ```
 Laisser les autres lignes intactes.
 
-#### 3d -- Committer la mise a jour
+#### 3e -- Committer
 
 ```bash
 git add HANDOFF.md
@@ -104,8 +110,8 @@ git push origin [branche]
 Afficher :
 ```
 Handoff :
-  Autre appareil : [nom] -- derniere sync [date ou "jamais"]
-  Actions en attente ici : [liste items checkbox ou "aucune"]
+  Briefing recu : [resume du contenu ou "aucun message en attente"]
+  Section "[device]" videe -- acquittement enregistre.
 ```
 
 ### Si `HANDOFF.md` absent
@@ -164,8 +170,8 @@ Memoire :
   [contrainte ou decision cle]
 
 Handoff :
-  [autre appareil] : derniere sync [date ou "jamais"]
-  En attente ici   : [actions ou "aucune"]
+  Briefing recu  : [resume du contenu ou "aucun message en attente"]
+  Autre appareil : [nom] -- derniere sync [date ou "jamais"]
 
 Checks :
   Branche     : [develop OK | WARNING main | feature/xxx en cours]

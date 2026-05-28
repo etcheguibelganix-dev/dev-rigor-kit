@@ -126,7 +126,7 @@ Signaler : "HANDOFF.md absent -- lancer /session-finalize pour le creer."
 
 Depuis `git branch --show-current` (ou `git log` Etape 1) :
 - `develop` : OK
-- `main` ou `master` : **WARNING** -- tout le travail va sur `develop`, pas directement sur main
+- `main` : **WARNING** -- tout le travail va sur `develop`, pas directement sur main
 - Branche `feature/*` : signaler, normal si travail en cours
 
 ### 4b -- Fichiers locaux non commites
